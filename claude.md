@@ -71,6 +71,19 @@ UIGen is an AI-powered React component generator. Users describe a component in 
 
 The AI-generated entry point must be `/App.jsx` and must have a default export. The `@/` import alias maps to the VFS root `/`.
 
+### Client-Side State
+
+Two React contexts work together, both provided in `src/app/main-content.tsx`:
+
+- `FileSystemContext` (`src/lib/contexts/file-system-context.tsx`) — owns the `VirtualFileSystem` instance in React state and exposes `handleToolCall`. When the AI SDK streams a tool call to the client, `ChatContext` calls `handleToolCall`, which mutates the VFS immediately so the preview iframe updates in real time without waiting for the server response to finish.
+- `ChatContext` (`src/lib/contexts/chat-context.tsx`) — wraps Vercel AI SDK's `useChat`. It serialises the current VFS and sends it as `body.files` on every request to `/api/chat`, so the server always has the latest file state.
+
+The key coupling: `ChatContext` reads from `FileSystemContext` (`useFileSystem()`) and calls `handleToolCall` inside `onToolCall`. This means you must provide `FileSystemProvider` before `ChatProvider` in the tree.
+
+### Server Actions
+
+`src/actions/` contains Next.js server actions for project CRUD (`create-project.ts`, `get-project.ts`, `get-projects.ts`) and a unified `index.ts` that re-exports them all. These are called directly from client components — no API routes needed for project management.
+
 ### Auth
 
 JWT-based sessions stored in httpOnly cookies (`auth-token`). `src/lib/auth.ts` is server-only. The middleware (`src/middleware.ts`) protects `/api/projects` and `/api/filesystem`. Users can also use the app anonymously; anonymous work is tracked in `sessionStorage` (`src/lib/anon-work-tracker.ts`) and can be saved to a new account on sign-up.
@@ -89,6 +102,13 @@ Prisma client is generated to `src/generated/prisma`.
 - **Always explain changes with comments**: When editing code, add clear comments that explain *what* the code does, *why* the change was made, and *how* it fits into the larger flow.
 - **Explain steps in detail**: The developer is actively learning — narrate reasoning and decisions, not just actions.
 - **Ask where to save preferences**: Whenever a new preference or instruction comes up, ask whether to save it to `CLAUDE.md` (shared, project-wide) or `MEMORY.md` (personal, not committed to git) before saving.
+
+### Testing
+
+- Framework: Vitest with jsdom environment (`vitest.config.mts`)
+- React: `@testing-library/react` — use `render`, `screen`, `cleanup` (call `cleanup` in `afterEach`)
+- Child components and contexts are mocked with `vi.mock()` in component tests
+- Tests live in `__tests__/` folders co-located with the code they test
 
 ### Key Conventions for Generated Components
 

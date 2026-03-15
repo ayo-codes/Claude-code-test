@@ -37,7 +37,8 @@ export function MainContent({ user, project }: MainContentProps) {
     <FileSystemProvider initialData={project?.data}>
       <ChatProvider projectId={project?.id} initialMessages={project?.messages}>
         <div className="h-screen w-screen overflow-hidden bg-neutral-50">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Stable id prevents server/client hydration mismatch with react-resizable-panels */}
+          <ResizablePanelGroup id="main-layout" direction="horizontal" className="h-full">
             {/* Left Panel - Chat */}
             <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
               <div className="h-full flex flex-col bg-white">
@@ -82,6 +83,7 @@ export function MainContent({ user, project }: MainContentProps) {
                     </div>
                   ) : (
                     <ResizablePanelGroup
+                      id="code-layout"
                       direction="horizontal"
                       className="h-full"
                     >
